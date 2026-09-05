@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Diwali Live — India Shines</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    width: 1920px; height: 1080px;
+    background: #060314;
+    font-family: 'Georgia', 'Palatino Linotype', serif;
+  }
+  #scene { position: absolute; top:0; left:0; }
+  .title {
+    position: absolute;
+    top: 30px; left: 0; width: 1920px;
+    text-align: center;
+    color: #ffe9b8;
+    font-size: 60px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    text-shadow: 0 0 16px rgba(255,183,77,0.9), 0 0 36px rgba(255,140,0,0.55);
+    opacity: 0.97;
+    pointer-events: none;
+  }
+  .subtitle {
+    position: absolute;
+    top: 100px; left: 0; width: 1920px;
+    text-align: center;
+    color: #f5d9a8;
+    font-size: 25px;
+    font-style: italic;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255,183,77,0.6);
+    opacity: 0.85;
+    pointer-events: none;
+  }
+  .hindi {
+    position: absolute;
+    top: 136px; left: 0; width: 1920px;
+    text-align: center;
+    color: #ffd27a;
+    font-size: 22px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 12px rgba(255,183,77,0.75);
+    opacity: 0.9;
+    pointer-events: none;
+  }
+  .clockbox {
+    position: absolute;
+    bottom: 46px; right: 70px;
+    color: #ffdfa0;
+    font-size: 26px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255,183,77,0.7);
+    opacity: 0.85;
+    pointer-events: none;
+  }
+  .countdown {
+    position: absolute;
+    top: 172px; left: 0; width: 1920px;
+    text-align: center;
+    pointer-events: none;
+  }
+  .countdown-label {
+    color: #f5d9a8;
+    font-size: 20px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(255,183,77,0.6);
+    opacity: 0.85;
+    margin-bottom: 8px;
+  }
+  .countdown-row {
+    display: inline-flex;
+    gap: 22px;
+  }
+  .countdown-unit {
+    display: inline-block;
+    min-width: 92px;
+    padding: 10px 14px;
+    background: rgba(20,10,40,0.35);
+    border: 1px solid rgba(255,200,120,0.35);
+    border-radius: 10px;
+    box-shadow: 0 0 22px rgba(255,170,60,0.25) inset, 0 0 14px rgba(255,170,60,0.25);
+  }
+  .countdown-num {
+    display: block;
+    color: #ffe9b8;
+    font-size: 46px;
+    font-weight: 700;
+    text-shadow: 0 0 14px rgba(255,183,77,0.85);
+    line-height: 1.1;
+  }
+  .countdown-unit-label {
+    display: block;
+    color: #f5d9a8;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+  .countdown-done {
+    color: #ffe9b8;
+    font-size: 42px;
+    font-weight: 700;
+    text-shadow: 0 0 18px rgba(255,183,77,0.9), 0 0 36px rgba(255,140,0,0.6);
+  }
+  .ribbon {
+    position: absolute; top:0; left:0; width:1920px; height:10px;
+    background: linear-gradient(90deg, #FF9933 0 33%, #FFFFFF 33% 66%, #138808 66% 100%);
+    opacity: 0.9;
+  }
+</style>
+</head>
+<body>
+  <canvas id="scene" width="1920" height="1080"></canvas>
+  <div class="ribbon"></div>
+  <div class="title">Happy Diwali — India Shines ✨</div>
+  <div class="subtitle">Wishing You Light Over Darkness &amp; Joy Over Sorrow</div>
+  <div class="hindi">शुभ दीपावली</div>
+  <div class="countdown" id="countdown">
+    <div class="countdown-label">Diwali — Sunday, November 8, 2026</div>
+    <div class="countdown-row" id="countdownRow">
+      <div class="countdown-unit"><span class="countdown-num" id="cdDays">--</span><span class="countdown-unit-label">Days</span></div>
+      <div class="countdown-unit"><span class="countdown-num" id="cdHours">--</span><span class="countdown-unit-label">Hours</span></div>
+      <div class="countdown-unit"><span class="countdown-num" id="cdMins">--</span><span class="countdown-unit-label">Minutes</span></div>
+      <div class="countdown-unit"><span class="countdown-num" id="cdSecs">--</span><span class="countdown-unit-label">Seconds</span></div>
+    </div>
+  </div>
+  <div class="clockbox" id="clock"></div>
+
+<script>
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ================= Clock (IST) =================
+function updateClock(){
+  const now = new Date();
+  const ist = new Date(now.getTime() + (330 + now.getTimezoneOffset())*60000);
+  const h = String(ist.getHours()).padStart(2,'0');
+  const m = String(ist.getMinutes()).padStart(2,'0');
+  const s = String(ist.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `IST ${h}:${m}:${s}`;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ================= Countdown to Diwali (Sun, Nov 8 2026, IST midnight) =================
+const DIWALI_TARGET = Date.UTC(2026, 10, 7, 18, 30, 0); // Nov 8 2026 00:00 IST = Nov 7 18:30 UTC
+function updateCountdown(){
+  const now = Date.now();
+  const diff = DIWALI_TARGET - now;
+  const row = document.getElementById('countdownRow');
+  const label = document.querySelector('.countdown-label');
+  if (diff <= 0){
+    label.textContent = 'Diwali is here!';
+    row.innerHTML = '<div class="countdown-done">Happy Diwali! 🪔✨</div>';
+    return;
+  }
+  const secTotal = Math.floor(diff/1000);
+  const days = Math.floor(secTotal/86400);
+  const hours = Math.floor((secTotal%86400)/3600);
+  const mins = Math.floor((secTotal%3600)/60);
+  const secs = secTotal%60;
+  document.getElementById('cdDays').textContent = String(days);
+  document.getElementById('cdHours').textContent = String(hours).padStart(2,'0');
+  document.getElementById('cdMins').textContent = String(mins).padStart(2,'0');
+  document.getElementById('cdSecs').textContent = String(secs).padStart(2,'0');
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+function hexToRgba(hex, a){
+  const v = parseInt(hex.slice(1),16);
+  const r=(v>>16)&255, g=(v>>8)&255, b=v&255;
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ================= Stars =================
+const stars = [];
+for (let i=0;i<220;i++){
+  stars.push({
+    x: Math.random()*W,
+    y: Math.random()*H*0.7,
+    r: Math.random()*1.6+0.4,
+    phase: Math.random()*Math.PI*2,
+    speed: 0.5+Math.random()*1.2
+  });
+}
+
+// ================= Real India geography =================
+// Coordinates below are simplified real-world coastlines (India mainland,
+// Andaman & Nicobar Islands, and Sri Lanka) projected from actual
+// longitude/latitude data (source: datasets/geo-countries), preserving true
+// relative geography — not a stylized shape.
+const INDIA_MAINLAND = [[330.5,0.0],[338.9,0.1],[337.4,8.3],[347.5,32.1],[369.9,42.2],[370.7,47.1],[362.3,52.2],[364.7,73.8],[374.1,81.1],[387.2,82.7],[383.0,92.2],[392.6,100.6],[386.7,109.1],[382.5,107.0],[369.6,116.1],[362.6,105.6],[350.5,108.6],[353.0,120.4],[362.8,130.1],[362.8,154.3],[368.9,155.7],[376.1,149.5],[385.3,164.8],[400.7,167.4],[413.5,175.5],[411.9,181.9],[440.1,194.7],[418.4,211.5],[413.1,224.0],[414.6,231.9],[407.0,245.4],[445.8,262.9],[450.1,271.5],[469.3,281.8],[475.2,279.5],[488.0,288.2],[497.5,287.5],[500.0,294.9],[518.1,300.9],[521.7,295.8],[537.7,300.4],[537.0,297.1],[546.7,294.2],[563.4,301.7],[564.6,312.1],[586.7,322.8],[597.8,318.6],[605.3,329.1],[620.9,327.4],[635.6,334.7],[646.8,328.6],[649.0,335.1],[655.6,337.2],[675.1,332.8],[678.7,336.5],[685.4,322.5],[678.5,309.0],[685.0,284.6],[683.0,278.9],[700.5,272.4],[708.8,281.4],[705.0,293.5],[710.1,301.5],[704.6,307.6],[717.1,319.7],[741.7,324.3],[760.0,316.9],[772.6,321.7],[796.6,317.8],[812.3,320.4],[819.0,317.3],[816.1,308.6],[819.5,302.3],[815.6,295.7],[802.9,293.5],[801.6,281.7],[814.8,286.4],[824.7,281.2],[836.2,281.9],[841.7,276.8],[839.7,271.4],[857.8,263.7],[861.6,254.0],[882.5,251.1],[884.7,245.1],[896.8,238.5],[894.8,233.9],[905.5,227.7],[911.5,233.3],[931.7,238.1],[944.6,226.9],[955.9,225.8],[965.9,229.9],[959.4,235.4],[960.1,241.6],[969.0,239.6],[973.7,248.3],[963.7,260.8],[991.6,262.7],[998.7,268.2],[1000.0,276.4],[982.9,291.0],[991.7,309.9],[977.5,299.8],[958.3,303.6],[923.4,327.4],[920.6,339.4],[924.3,348.1],[919.2,352.8],[919.5,359.7],[905.7,372.3],[903.9,379.3],[909.2,385.9],[889.4,429.0],[861.3,421.3],[865.4,435.5],[863.5,455.8],[855.5,459.4],[853.1,471.9],[856.6,487.8],[846.5,499.0],[839.9,491.7],[836.2,498.2],[825.4,434.5],[813.8,433.9],[814.5,442.3],[807.7,450.5],[809.5,457.2],[802.3,462.6],[795.8,450.9],[793.0,456.8],[786.9,437.3],[794.7,420.0],[807.3,415.0],[812.3,417.9],[813.1,411.2],[820.2,408.7],[824.1,390.8],[833.0,389.5],[817.6,380.1],[760.5,381.3],[741.8,376.3],[742.2,350.7],[736.2,341.8],[732.3,351.5],[725.3,350.0],[717.9,344.6],[715.3,335.9],[710.1,335.8],[714.5,341.3],[702.3,340.2],[702.0,334.7],[692.3,327.4],[690.4,332.8],[696.6,337.0],[685.2,344.8],[682.6,356.2],[713.3,376.3],[711.2,380.6],[694.7,379.8],[690.6,391.4],[683.5,389.9],[680.3,399.9],[695.9,412.1],[704.8,413.1],[704.0,426.4],[698.1,436.6],[705.9,442.5],[703.4,451.2],[712.4,453.1],[708.3,461.4],[716.5,491.8],[715.9,499.7],[710.6,498.5],[716.6,511.5],[709.0,506.0],[709.0,510.8],[703.8,512.9],[705.7,492.6],[701.2,499.4],[702.2,489.8],[699.2,513.7],[696.3,513.7],[696.5,499.2],[695.2,511.3],[690.9,507.8],[690.2,511.8],[688.5,504.8],[688.3,513.8],[686.4,491.2],[676.4,481.7],[685.2,494.1],[673.9,507.4],[652.2,513.9],[642.5,522.2],[640.0,531.2],[644.2,541.4],[641.2,542.3],[646.8,545.4],[636.9,553.1],[637.0,559.5],[628.1,564.3],[625.7,571.1],[616.4,565.8],[623.9,572.4],[620.3,574.4],[593.4,583.4],[596.4,575.7],[586.1,579.2],[581.2,590.3],[585.4,583.8],[590.3,582.5],[588.2,586.7],[596.6,582.5],[568.0,602.5],[546.6,633.8],[523.9,647.7],[516.6,659.8],[486.9,677.6],[482.9,684.3],[486.8,685.0],[484.8,697.2],[466.1,706.7],[448.9,706.3],[440.4,726.7],[436.5,717.4],[433.4,729.0],[428.7,721.9],[415.4,729.6],[407.6,752.0],[412.5,771.4],[407.4,784.6],[410.4,783.8],[416.5,812.9],[410.6,802.2],[407.6,806.3],[417.0,813.2],[417.2,821.8],[411.9,846.3],[398.5,874.5],[399.6,888.8],[394.7,891.9],[400.1,890.2],[400.9,928.9],[381.4,930.4],[381.1,938.4],[368.6,959.1],[387.1,970.7],[371.2,966.3],[351.4,972.9],[343.6,981.1],[339.3,1000.0],[320.6,1010.6],[303.0,999.8],[287.5,979.8],[291.8,976.3],[287.0,978.5],[281.3,964.6],[277.0,941.4],[280.5,950.8],[281.2,946.5],[281.1,957.3],[286.1,956.8],[275.1,935.8],[277.1,930.9],[274.1,931.6],[259.8,889.1],[245.8,869.7],[248.1,866.9],[241.3,865.1],[228.8,835.6],[232.6,833.6],[228.4,834.2],[225.6,805.0],[217.4,791.1],[215.1,774.7],[203.7,763.0],[208.5,759.9],[204.3,761.1],[197.5,752.5],[193.0,740.4],[199.3,741.6],[191.4,734.3],[194.9,731.0],[190.8,732.3],[181.5,716.0],[173.1,660.1],[163.7,636.6],[168.7,634.8],[163.2,631.5],[163.0,625.5],[166.7,627.5],[161.3,619.7],[163.7,614.4],[166.0,617.9],[162.7,611.9],[168.2,607.4],[165.1,602.0],[158.4,609.9],[158.9,596.4],[167.9,599.9],[158.1,594.0],[162.1,588.3],[156.7,588.2],[154.2,576.6],[164.4,543.1],[159.7,529.5],[153.0,530.4],[157.1,526.9],[151.3,520.0],[170.7,506.3],[150.8,509.7],[157.1,497.6],[149.2,498.3],[151.7,490.2],[163.4,487.4],[147.9,488.8],[145.6,483.9],[137.1,487.2],[142.5,488.9],[142.5,494.5],[135.3,497.1],[133.0,499.7],[137.8,503.2],[134.0,501.1],[131.9,504.8],[142.2,511.2],[135.6,526.7],[102.6,542.9],[88.9,544.6],[65.4,528.6],[27.4,486.5],[31.8,479.6],[36.6,487.3],[47.0,480.9],[50.4,484.3],[69.6,476.7],[80.8,456.7],[77.0,462.7],[68.0,460.8],[49.4,469.3],[24.7,459.8],[9.6,444.1],[9.1,437.6],[23.2,428.2],[6.3,438.9],[0.0,438.0],[4.5,436.0],[0.7,432.6],[4.1,426.0],[19.9,425.0],[20.7,411.5],[23.8,415.0],[26.0,411.9],[62.6,417.6],[77.8,408.9],[82.8,408.1],[83.0,413.6],[89.4,415.2],[100.6,408.5],[96.2,402.1],[100.0,398.5],[85.9,372.2],[85.9,362.0],[72.1,360.7],[65.8,350.7],[69.0,330.4],[46.6,322.9],[47.6,308.5],[75.2,275.8],[81.8,275.7],[92.0,287.3],[127.7,277.7],[144.1,248.0],[163.8,237.6],[178.9,205.2],[198.5,195.6],[195.4,188.8],[211.4,169.6],[223.0,162.6],[217.8,159.2],[221.6,148.8],[217.2,139.5],[219.3,135.2],[247.0,119.2],[235.5,111.6],[224.0,111.5],[223.9,98.2],[212.3,100.6],[211.1,92.2],[200.5,85.4],[205.8,73.8],[199.3,64.9],[209.8,56.5],[196.8,53.1],[200.1,47.1],[192.7,41.4],[197.7,31.4],[212.4,26.6],[261.9,36.4],[269.7,30.2],[291.2,27.6],[304.6,14.3],[330.5,0.0]];
+const INDIA_ANDAMAN = [[852.5,818.6],[853.4,819.5],[852.0,826.8],[851.4,827.9],[850.0,828.0],[849.5,826.0],[848.5,826.6],[849.1,830.2],[848.5,830.8],[847.5,829.8],[846.5,832.2],[847.2,832.8],[848.1,832.3],[849.5,834.1],[849.2,837.1],[850.4,839.3],[849.8,842.8],[850.4,846.8],[848.5,850.5],[847.1,849.2],[847.3,850.0],[845.5,850.0],[847.8,853.5],[846.6,854.4],[847.3,855.5],[846.6,857.0],[847.1,858.4],[844.8,860.8],[845.0,861.6],[842.4,863.1],[843.6,864.6],[842.6,864.8],[841.8,866.6],[841.7,870.4],[842.6,868.2],[843.4,868.4],[843.8,869.7],[842.5,876.7],[839.9,878.9],[840.3,880.3],[841.7,877.7],[842.5,878.4],[842.7,880.0],[841.0,884.6],[837.9,880.9],[838.7,879.3],[837.7,878.8],[837.1,876.3],[835.8,876.1],[835.9,872.3],[834.4,871.2],[836.0,868.5],[837.5,869.7],[837.6,870.9],[838.4,860.9],[839.8,857.9],[841.2,857.6],[841.4,859.6],[843.6,858.3],[842.4,856.2],[843.6,855.0],[841.6,854.2],[841.0,852.6],[841.2,843.9],[843.3,841.5],[842.1,840.4],[841.7,836.2],[843.9,834.4],[845.0,829.0],[844.1,828.4],[845.7,823.7],[845.0,822.7],[845.3,820.7],[846.1,820.4],[845.5,816.4],[849.0,809.0],[851.1,808.8],[851.1,807.8],[852.2,808.1],[853.0,809.3],[852.5,811.7],[853.4,814.5],[850.8,816.9],[850.5,815.9],[849.9,816.4],[852.5,818.6]];
+const SRI_LANKA = [[470.0,1046.9],[466.6,1064.6],[462.3,1071.2],[451.1,1079.5],[426.0,1089.9],[412.8,1086.1],[409.0,1082.1],[401.1,1057.4],[399.4,1043.6],[400.6,1045.7],[401.0,1044.1],[395.4,1005.3],[398.2,1000.5],[396.6,1012.9],[400.1,1013.3],[399.1,1005.0],[404.1,986.1],[402.9,978.8],[407.4,975.6],[409.4,969.4],[407.6,962.1],[412.5,959.1],[407.6,954.6],[413.8,956.8],[415.6,959.9],[420.4,958.1],[426.8,960.1],[412.2,952.6],[412.2,955.0],[404.3,951.3],[402.7,948.2],[404.8,946.5],[410.0,946.4],[421.0,955.3],[410.5,947.1],[414.2,946.1],[434.0,966.6],[436.0,971.2],[434.3,971.3],[438.6,975.9],[435.7,975.0],[437.1,978.6],[439.3,977.3],[447.9,989.4],[448.6,993.3],[444.6,994.9],[452.5,995.6],[455.4,1008.7],[453.8,1006.3],[453.6,1008.4],[459.2,1013.4],[460.1,1018.7],[464.3,1023.3],[460.4,1023.5],[465.6,1027.3],[466.4,1033.4],[467.7,1035.1],[468.3,1032.8],[469.3,1035.1],[470.0,1046.9]];
+
+const MAP_SCALE = 0.52, MAP_OFFX = 560, MAP_OFFY = 290;
+function toCanvas(p){ return [p[0]*MAP_SCALE+MAP_OFFX, p[1]*MAP_SCALE+MAP_OFFY]; }
+const mainlandPts = INDIA_MAINLAND.map(toCanvas);
+const andamanPts = INDIA_ANDAMAN.map(toCanvas);
+const sriLankaPts = SRI_LANKA.map(toCanvas);
+
+function polyPath(pts){
+  ctx.beginPath();
+  pts.forEach(([x,y],i)=> i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
+  ctx.closePath();
+}
+
+function drawIndia(t){
+  const glow = 26 + Math.sin(t/700)*9;
+
+  // --- mainland ---
+  ctx.save();
+  polyPath(mainlandPts);
+  const minY = Math.min(...mainlandPts.map(p=>p[1]));
+  const maxY = Math.max(...mainlandPts.map(p=>p[1]));
+  const grad = ctx.createLinearGradient(0, minY, 0, maxY);
+  grad.addColorStop(0, '#ffe9a0');
+  grad.addColorStop(0.4, '#ffb347');
+  grad.addColorStop(0.75, '#ff8c1a');
+  grad.addColorStop(1, '#e8590c');
+  ctx.fillStyle = grad;
+  ctx.shadowColor = 'rgba(255,170,60,0.95)';
+  ctx.shadowBlur = glow;
+  ctx.globalAlpha = 0.96;
+  ctx.fill();
+  ctx.lineWidth = 2.4;
+  ctx.strokeStyle = '#fff4d6';
+  ctx.shadowBlur = glow*1.5;
+  ctx.stroke();
+
+  ctx.save();
+  polyPath(mainlandPts);
+  ctx.clip();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = '#fff';
+  ctx.shadowBlur = 0;
+  ctx.beginPath();
+  ctx.ellipse(MAP_OFFX+280*MAP_SCALE, MAP_OFFY+240*MAP_SCALE, 90*MAP_SCALE, 240*MAP_SCALE, -0.1, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  // --- Andaman & Nicobar chain ---
+  ctx.save();
+  polyPath(andamanPts);
+  ctx.fillStyle = '#ffb347';
+  ctx.shadowColor = 'rgba(255,170,60,0.9)';
+  ctx.shadowBlur = glow*0.6;
+  ctx.globalAlpha = 0.95;
+  ctx.fill();
+  ctx.lineWidth = 1.3;
+  ctx.strokeStyle = '#fff4d6';
+  ctx.stroke();
+  ctx.restore();
+
+  // --- Sri Lanka ---
+  ctx.save();
+  polyPath(sriLankaPts);
+  ctx.fillStyle = '#ffb347';
+  ctx.shadowColor = 'rgba(255,170,60,0.9)';
+  ctx.shadowBlur = glow*0.6;
+  ctx.globalAlpha = 0.95;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#fff4d6';
+  ctx.stroke();
+  ctx.restore();
+}
+
+function perimeterPoints(pts, count){
+  const segs = [];
+  let total = 0;
+  for (let i=0;i<pts.length;i++){
+    const a = pts[i], b = pts[(i+1)%pts.length];
+    const d = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    segs.push({a,b,d});
+    total += d;
+  }
+  const step = total/count;
+  const out = [];
+  let segIdx = 0, segPos = 0;
+  for (let i=0;i<count;i++){
+    while (segPos > segs[segIdx].d){
+      segPos -= segs[segIdx].d;
+      segIdx = (segIdx+1)%segs.length;
+    }
+    const seg = segs[segIdx];
+    const f = seg.d===0?0:segPos/seg.d;
+    out.push([seg.a[0]+(seg.b[0]-seg.a[0])*f, seg.a[1]+(seg.b[1]-seg.a[1])*f]);
+    segPos += step;
+  }
+  return out;
+}
+const diyaSpots = perimeterPoints(mainlandPts, 110);
+const bulbColors = ['#fff3c4','#ffb347','#ff7b1a','#ffd700','#ff5e3a'];
+
+function drawDiya(x,y,t,seed){
+  const flick = 0.75 + 0.25*Math.sin(t/90 + seed*10) + 0.08*Math.sin(t/37+seed*4);
+  const color = bulbColors[seed % bulbColors.length];
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.beginPath();
+  ctx.ellipse(0,6,7,3.2,0,0,Math.PI*2);
+  ctx.fillStyle = '#7a3b1e';
+  ctx.fill();
+  const g = ctx.createRadialGradient(0,-6,0,0,-6,13*flick);
+  g.addColorStop(0,'rgba(255,255,240,0.98)');
+  g.addColorStop(0.4, hexToRgba(color,0.9));
+  g.addColorStop(1, hexToRgba(color,0));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0,-6,13*flick,0,Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(0,-8,2*flick,5*flick,0,0,Math.PI*2);
+  ctx.fillStyle = '#fff8e0';
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawTwinkle(x,y,t,seed){
+  const a = 0.5+0.5*Math.sin(t/200+seed*7);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#fff3c4';
+  ctx.shadowColor = '#ffd27a';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(x,y,2.2,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+const andamanTwinkles = perimeterPoints(andamanPts, 10);
+const sriLankaTwinkles = perimeterPoints(sriLankaPts, 14);
+
+// ================= Moon =================
+function drawMoon(t){
+  const mx = 190, my = 150, r = 62;
+  ctx.save();
+  const glow = ctx.createRadialGradient(mx,my,r*0.5,mx,my,r*2.4);
+  glow.addColorStop(0,'rgba(255,250,220,0.35)');
+  glow.addColorStop(1,'rgba(255,250,220,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(mx,my,r*2.4,0,Math.PI*2); ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(mx,my,r,0,Math.PI*2);
+  const body = ctx.createRadialGradient(mx-r*0.3,my-r*0.3,r*0.1,mx,my,r);
+  body.addColorStop(0,'#fffef2');
+  body.addColorStop(1,'#f2e6b8');
+  ctx.fillStyle = body;
+  ctx.shadowColor = 'rgba(255,250,220,0.7)';
+  ctx.shadowBlur = 24;
+  ctx.fill();
+
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = '#c9b98a';
+  [[-15,-10,10],[10,15,7],[0,-25,5],[-20,18,6]].forEach(([dx,dy,cr])=>{
+    ctx.beginPath(); ctx.arc(mx+dx,my+dy,cr,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+// ================= Top garland / toran =================
+const buntingCount = 46;
+const buntingColors = ['#FF9933','#ffffff','#138808','#ffd23f'];
+function drawGarland(t){
+  const y0 = 16, spacing = W/(buntingCount-1);
+  ctx.save();
+  ctx.beginPath();
+  for (let i=0;i<=buntingCount;i++){
+    const x = i*spacing;
+    const sag = Math.sin((i/buntingCount)*Math.PI)*10;
+    const y = y0 + sag*0.4;
+    i===0? ctx.moveTo(x,y): ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = 'rgba(255,224,150,0.4)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  for (let i=0;i<buntingCount;i++){
+    const x = i*spacing + spacing/2;
+    const sag = Math.sin((i/buntingCount)*Math.PI)*10;
+    const yTop = y0 + sag*0.4;
+    const col = buntingColors[i%buntingColors.length];
+    ctx.beginPath();
+    ctx.moveTo(x-9, yTop);
+    ctx.lineTo(x+9, yTop);
+    ctx.lineTo(x, yTop+26);
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    const tw = 0.5+0.5*Math.sin(t/260 + i*1.3);
+    ctx.globalAlpha = tw;
+    ctx.beginPath();
+    ctx.arc(x, yTop+30, 2.6, 0, Math.PI*2);
+    ctx.fillStyle = '#fff3c4';
+    ctx.shadowColor = '#ffd27a';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ================= Falling marigold petals =================
+const petals = [];
+for (let i=0;i<40;i++){
+  petals.push({
+    x: Math.random()*W, y: Math.random()*H,
+    speed: 0.4+Math.random()*0.9,
+    drift: Math.random()*Math.PI*2,
+    driftSpeed: 0.2+Math.random()*0.3,
+    size: 4+Math.random()*4,
+    rot: Math.random()*Math.PI*2,
+    rotSpeed: (Math.random()-0.5)*0.03,
+    color: Math.random()<0.5 ? '#ff9933' : '#ffd23f'
+  });
+}
+function updateAndDrawPetals(t){
+  ctx.save();
+  petals.forEach(p=>{
+    p.y += p.speed;
+    p.x += Math.sin(t/1000*p.driftSpeed + p.drift)*0.6;
+    p.rot += p.rotSpeed;
+    if (p.y > H+10){ p.y = -10; p.x = Math.random()*W; }
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.ellipse(0,0,p.size,p.size*0.55,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// ================= Floating sky lanterns =================
+const lanterns = [];
+for (let i=0;i<9;i++){
+  lanterns.push({
+    x: 100 + Math.random()*1720,
+    y: 1080 + Math.random()*600,
+    speed: 0.25+Math.random()*0.35,
+    sway: Math.random()*Math.PI*2,
+    swaySpeed: 0.3+Math.random()*0.4,
+    scale: 0.7+Math.random()*0.7
+  });
+}
+function updateAndDrawLanterns(t){
+  lanterns.forEach(l=>{
+    l.y -= l.speed;
+    if (l.y < -60){ l.y = 1080+Math.random()*200; l.x = 100+Math.random()*1720; }
+    const sx = l.x + Math.sin(t/1000*l.swaySpeed + l.sway)*18;
+    ctx.save();
+    ctx.translate(sx, l.y);
+    ctx.scale(l.scale, l.scale);
+    const g = ctx.createRadialGradient(0,0,0,0,0,34);
+    g.addColorStop(0,'rgba(255,224,150,0.8)');
+    g.addColorStop(1,'rgba(255,150,50,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0,0,34,0,Math.PI*2); ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(-11,-16); ctx.quadraticCurveTo(-15,10,0,20);
+    ctx.quadraticCurveTo(15,10,11,-16);
+    ctx.closePath();
+    const body = ctx.createLinearGradient(0,-16,0,20);
+    body.addColorStop(0,'#ffdf9e');
+    body.addColorStop(1,'#ff9a3c');
+    ctx.fillStyle = body;
+    ctx.globalAlpha = 0.92;
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+// ================= Rangoli =================
+function drawRangoli(t){
+  const cx = 960, cy = 960;
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.scale(1, 0.4);
+  ctx.rotate(t/9000);
+  const colors = ['#FF9933','#ffffff','#138808','#ffd23f','#e63946'];
+
+  const glow = ctx.createRadialGradient(0,0,20,0,0,150);
+  glow.addColorStop(0,'rgba(255,190,90,0.25)');
+  glow.addColorStop(1,'rgba(255,190,90,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(0,0,150,0,Math.PI*2); ctx.fill();
+
+  for (let ring=0; ring<3; ring++){
+    const radius = 128 - ring*38;
+    const petalsN = 12 + ring*6;
+    const pw = 15 - ring*3, ph = 6.5 - ring;
+    for (let i=0;i<petalsN;i++){
+      const ang = (Math.PI*2/petalsN)*i;
+      const px = Math.cos(ang)*radius;
+      const py = Math.sin(ang)*radius;
+      ctx.save();
+      ctx.translate(px,py);
+      ctx.rotate(ang);
+      ctx.beginPath();
+      ctx.ellipse(0,0, pw, ph, 0, 0, Math.PI*2);
+      ctx.fillStyle = colors[(ring+i)%colors.length];
+      ctx.globalAlpha = 0.8;
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.beginPath();
+  ctx.arc(0,0,20,0,Math.PI*2);
+  ctx.fillStyle = '#ffd23f';
+  ctx.shadowColor = 'rgba(255,210,100,0.9)';
+  ctx.shadowBlur = 20;
+  ctx.globalAlpha = 0.95;
+  ctx.fill();
+  ctx.restore();
+}
+
+// ================= Fireworks (aerial — several distinct cracker types) =================
+let fireworks = [];
+let particles = [];
+const colorSets = [
+  ['#ffd23f','#ff8c42','#ff3c38'],
+  ['#8ecae6','#219ebc','#ffffff'],
+  ['#ff9933','#ffffff','#138808'],
+  ['#f72585','#c77dff','#ffd6ff'],
+  ['#ffe066','#ff6b35','#f72585'],
+  ['#ffd700','#ffffff','#ffb347']
+];
+const crackerTypes = ['peony','chrysanthemum','willow','ring','crackle','palm'];
+
+function spawnFirework(){
+  const x = 120 + Math.random()*1680;
+  const targetY = 130 + Math.random()*270;
+  const type = crackerTypes[Math.floor(Math.random()*crackerTypes.length)];
+  fireworks.push({
+    x, y:1080, vy:-11-Math.random()*3.5, targetY,
+    trail: [],
+    type,
+    colors: colorSets[Math.floor(Math.random()*colorSets.length)]
+  });
+}
+setInterval(spawnFirework, 850);
+
+function explode(x,y,colors,type){
+  if (type === 'peony'){
+    const count = 90;
+    for (let i=0;i<count;i++){
+      const ang = (Math.PI*2/count)*i + Math.random()*0.12;
+      const speed = 2.5+Math.random()*5.5;
+      particles.push({ x,y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+        life:1, decay:0.008+Math.random()*0.012, size:1.8+Math.random()*1.8,
+        color: colors[Math.floor(Math.random()*colors.length)], type:'dot' });
+    }
+  } else if (type === 'chrysanthemum'){
+    const count = 70;
+    for (let i=0;i<count;i++){
+      const ang = (Math.PI*2/count)*i;
+      const speed = 4+Math.random()*4.5;
+      particles.push({ x,y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+        life:1, decay:0.006+Math.random()*0.006, size:1.6, trail:[],
+        color: colors[Math.floor(Math.random()*colors.length)], type:'streak' });
+    }
+  } else if (type === 'willow'){
+    const count = 60;
+    for (let i=0;i<count;i++){
+      const ang = (Math.PI*2/count)*i + Math.random()*0.2;
+      const speed = 2+Math.random()*3.2;
+      particles.push({ x,y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed*0.6-1,
+        life:1, decay:0.003+Math.random()*0.003, size:1.6, gravity:0.05, trail:[],
+        color:'#ffd27a', type:'streak' });
+    }
+  } else if (type === 'ring'){
+    const count = 60;
+    for (let i=0;i<count;i++){
+      const ang = (Math.PI*2/count)*i;
+      const speed = 4.2+Math.random()*0.4;
+      particles.push({ x,y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+        life:1, decay:0.009+Math.random()*0.004, size:2,
+        color: colors[Math.floor(Math.random()*colors.length)], type:'dot' });
+    }
+  } else if (type === 'crackle'){
+    const count = 100;
+    for (let i=0;i<count;i++){
+      const ang = Math.random()*Math.PI*2;
+      const speed = 1.5+Math.random()*5.5;
+      particles.push({ x,y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed,
+        life:1, decay:0.01+Math.random()*0.02, size:1.4+Math.random()*1.2,
+        color: Math.random()<0.5?'#ffffff':colors[0], type:'strobe', seed:Math.random()*10 });
+    }
+  } else if (type === 'palm'){
+    const arms = 8;
+    for (let a=0; a<arms; a++){
+      const ang = (Math.PI*2/arms)*a + Math.random()*0.1;
+      const speed = 6+Math.random()*1.5;
+      for (let j=0;j<9;j++){
+        particles.push({ x,y, vx:Math.cos(ang)*speed*(0.4+j*0.07), vy:Math.sin(ang)*speed*(0.4+j*0.07),
+          life:1, decay:0.006+Math.random()*0.004, size:2.2, gravity:0.03, trail:[],
+          color: colors[a%colors.length], type:'streak' });
+      }
+    }
+  }
+  particles.push({x,y,vx:0,vy:0,life:1,decay:0.12,size:38,color:'#ffffff',type:'flash'});
+}
+
+function updateFireworks(){
+  fireworks = fireworks.filter(f=>{
+    f.trail.push({x:f.x,y:f.y});
+    if (f.trail.length>6) f.trail.shift();
+    f.y += f.vy;
+    if (f.y <= f.targetY){
+      explode(f.x, f.y, f.colors, f.type);
+      return false;
+    }
+    return true;
+  });
+  particles = particles.filter(p=>{
+    if (p.trail){
+      p.trail.push({x:p.x,y:p.y});
+      if (p.trail.length>5) p.trail.shift();
+    }
+    p.x += p.vx; p.y += p.vy;
+    p.vy += (p.gravity!==undefined ? p.gravity : 0.045);
+    p.vx *= 0.99;
+    p.life -= p.decay;
+    return p.life > 0;
+  });
+}
+
+function drawFireworks(){
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  fireworks.forEach(f=>{
+    f.trail.forEach((pt,i)=>{
+      ctx.globalAlpha = (i/f.trail.length)*0.5;
+      ctx.beginPath();
+      ctx.arc(pt.x,pt.y,2,0,Math.PI*2);
+      ctx.fillStyle = '#ffdd8a';
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(f.x,f.y,3,0,Math.PI*2);
+    ctx.fillStyle = '#fff8e0';
+    ctx.shadowColor = '#ffdd8a';
+    ctx.shadowBlur = 14;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  particles.forEach(p=>{
+    if (p.type === 'flash'){
+      ctx.globalAlpha = Math.max(p.life,0)*0.6;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    } else if (p.type === 'streak' && p.trail){
+      p.trail.forEach((pt,i)=>{
+        ctx.globalAlpha = Math.max(p.life,0) * (i/p.trail.length) * 0.8;
+        ctx.beginPath();
+        ctx.arc(pt.x,pt.y,p.size*0.8,0,Math.PI*2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+      ctx.globalAlpha = Math.max(p.life,0);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    } else if (p.type === 'strobe'){
+      const flick = Math.sin(p.life*40 + p.seed) > 0.2 ? 1 : 0;
+      ctx.globalAlpha = Math.max(p.life,0) * flick;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    } else {
+      ctx.globalAlpha = Math.max(p.life,0);
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    }
+  });
+  ctx.restore();
+}
+
+// ================= Ground fountain (anaar) =================
+const anaar = { x: 210, y: 1040, sparks: [] };
+function updateAndDrawAnaar(t){
+  for (let i=0;i<3;i++){
+    const ang = -Math.PI/2 + (Math.random()-0.5)*0.9;
+    const speed = 4+Math.random()*5;
+    anaar.sparks.push({
+      x: anaar.x, y: anaar.y,
+      vx: Math.cos(ang)*speed*0.5, vy: Math.sin(ang)*speed,
+      life:1, decay:0.012+Math.random()*0.01,
+      color: Math.random()<0.6 ? '#ffd23f' : '#ff8c1a'
+    });
+  }
+  anaar.sparks = anaar.sparks.filter(s=>{
+    s.x += s.vx; s.y += s.vy; s.vy += 0.16; s.vx *= 0.99;
+    s.life -= s.decay;
+    return s.life>0 && s.y < 1080;
+  });
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(anaar.x-14, anaar.y+4);
+  ctx.lineTo(anaar.x+14, anaar.y+4);
+  ctx.lineTo(anaar.x+9, anaar.y-14);
+  ctx.lineTo(anaar.x-9, anaar.y-14);
+  ctx.closePath();
+  ctx.fillStyle = '#8a4a26';
+  ctx.fill();
+  ctx.strokeStyle = '#5c2f14';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.globalCompositeOperation = 'lighter';
+  anaar.sparks.forEach(s=>{
+    ctx.globalAlpha = Math.max(s.life,0);
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,2,0,Math.PI*2);
+    ctx.fillStyle = s.color;
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+// ================= Ground spinner (chakri) =================
+const chakri = { x: 1710, y: 1040, angle:0 };
+function updateAndDrawChakri(t){
+  chakri.angle += 0.28;
+  ctx.save();
+  ctx.translate(chakri.x, chakri.y);
+  ctx.fillStyle = '#5c2f14';
+  ctx.fillRect(-3, 0, 6, 30);
+  ctx.rotate(chakri.angle);
+  ctx.beginPath();
+  ctx.arc(0,0,10,0,Math.PI*2);
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  const arms = 4;
+  for (let a=0;a<arms;a++){
+    const ang = (Math.PI*2/arms)*a;
+    const ex = Math.cos(ang)*34, ey = Math.sin(ang)*34;
+    const grad = ctx.createLinearGradient(0,0,ex,ey);
+    grad.addColorStop(0,'rgba(255,210,100,0.9)');
+    grad.addColorStop(1,'rgba(255,120,30,0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.lineTo(ex,ey);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ex,ey,2.4,0,Math.PI*2);
+    ctx.fillStyle = '#fff3c4';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ================= Main loop =================
+function frame(t){
+  ctx.clearRect(0,0,W,H);
+
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#050314');
+  sky.addColorStop(0.55,'#0d0730');
+  sky.addColorStop(1,'#1c0f3a');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0,0,W,H);
+
+  stars.forEach(s=>{
+    const a = 0.4 + 0.6*Math.abs(Math.sin(t/1000*s.speed + s.phase));
+    ctx.globalAlpha = a;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  drawMoon(t);
+  updateAndDrawLanterns(t);
+  updateAndDrawPetals(t);
+
+  updateFireworks();
+  drawFireworks();
+
+  drawRangoli(t);
+  updateAndDrawAnaar(t);
+  updateAndDrawChakri(t);
+
+  drawIndia(t);
+  diyaSpots.forEach(([x,y],i)=> drawDiya(x,y,t,i));
+  andamanTwinkles.forEach(([x,y],i)=> drawTwinkle(x,y,t,i));
+  sriLankaTwinkles.forEach(([x,y],i)=> drawTwinkle(x,y,t,i+20));
+
+  drawGarland(t);
+
+  const vg = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0,0,W,H);
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
