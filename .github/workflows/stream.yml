@@ -52,20 +52,25 @@ jobs:
           nohup python3 -m http.server 8080 > server.log 2>&1 &
           sleep 2
 
-      - name: Launch Chrome fullscreen with the animation
+       - name: Launch Chrome fullscreen with the animation
         run: |
           nohup "${{ steps.setup-chrome.outputs.chrome-path }}" \
             --kiosk \
             --window-size=1920,1080 \
             --window-position=0,0 \
+            --no-first-run \
+            --no-default-browser-check \
             --no-sandbox \
             --disable-infobars \
             --disable-dev-shm-usage \
+            --disable-popup-blocking \
+            --disable-notifications \
             --autoplay-policy=no-user-gesture-required \
             --disable-gpu \
+            --user-data-dir=/tmp/chrome-profile \
             "http://localhost:8080/index.html" \
             > chromium.log 2>&1 &
-          sleep 6
+          sleep 8
 
       - name: Stream to YouTube via ffmpeg
         env:
