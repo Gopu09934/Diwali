@@ -1,30 +1,19 @@
 name: Diwali Live Stream
 
-# This workflow renders index.html in a virtual display and streams it
-# live to YouTube via RTMP using ffmpeg.
-#
-# IMPORTANT LIMITS (see README.md for details):
-# - A single GitHub Actions job can run for a MAXIMUM of 6 hours.
-# - This workflow is scheduled to relaunch itself every 5 hours so the
-#   stream effectively continues, but there will be a short gap
-#   (roughly 1-3 minutes) between each run while the new job starts.
-# - This is NOT a guaranteed 24/7 uptime solution — GitHub can delay
-#   scheduled runs during high load, and free-tier accounts have a
-#   monthly Actions-minutes budget that this will consume quickly.
-
 on:
-  workflow_dispatch: {}          # manual "Run workflow" button
+  workflow_dispatch: {}
   schedule:
-    - cron: "0 */5 * * *"        # relaunch every 5 hours
+    - cron: "0 */5 * * *"
 
 concurrency:
   group: diwali-live-stream
-  cancel-in-progress: false      # never kill a run early; queue the next one
+  cancel-in-progress: false
 
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 290         # ~4h50m, safely under the 6h hard cap
+    timeout-minutes: 290
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -42,7 +31,7 @@ jobs:
 
       - name: Start virtual display
         run: |
-          Xvfb :99 -screen 0 1920x1080x24 &
+          Xvfb :99 -screen 0 1920x1080x24 -ac &
           sleep 3
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
 
@@ -52,8 +41,11 @@ jobs:
           nohup python3 -m http.server 8080 > server.log 2>&1 &
           sleep 2
 
-       - name: Launch Chrome fullscreen with the animation
+      - name: Launch Chrome fullscreen with the animation
         run: |
+          rm -rf /tmp/chrome-profile
+          mkdir -p /tmp/chrome-profile
+
           nohup "${{ steps.setup-chrome.outputs.chrome-path }}" \
             --kiosk \
             --window-size=1920,1080 \
@@ -70,6 +62,7 @@ jobs:
             --user-data-dir=/tmp/chrome-profile \
             "http://localhost:8080/index.html" \
             > chromium.log 2>&1 &
+
           sleep 8
 
       - name: Stream to YouTube via ffmpeg
@@ -80,9 +73,23 @@ jobs:
             echo "ERROR: YOUTUBE_STREAM_KEY secret is not set. See README.md." >&2
             exit 1
           fi
-          ffmpeg -f x11grab -video_size 1920x1080 -framerate 30 -i :99 \
-            -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
-            -c:v libx264 -preset veryfast -tune zerolatency \
-            -b:v 3000k -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 60 \
-            -c:a aac -b:a 128k \
-            -f flv "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
+
+          ffmpeg \
+            -f x11grab \
+            -video_size 1920x1080 \
+            -framerate 30 \
+            -i :99 \
+            -f lavfi \
+            -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+            -c:v libx264 \
+            -preset veryfast \
+            -tune zerolatency \
+            -b:v 3000k \
+            -maxrate 3000k \
+            -bufsize 6000k \
+            -pix_fmt yuv420p \
+            -g 60 \
+            -c:a aac \
+            -b:a 128k \
+            -f flv \
+            "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
