@@ -15,32 +15,73 @@ jobs:
     timeout-minutes: 290
 
     steps:
+      # ============================================
+      # CHECKOUT
+      # ============================================
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # ============================================
+      # INSTALL CHROME
+      # ============================================
       - name: Install a real Chrome binary
         uses: browser-actions/setup-chrome@v1
         id: setup-chrome
         with:
           chrome-version: stable
 
-      - name: Install xvfb and ffmpeg
+      # ============================================
+      # INSTALL REQUIRED PACKAGES
+      # ============================================
+      - name: Install Xvfb, FFmpeg, Python and fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb ffmpeg python3
 
+          sudo apt-get install -y \
+            xvfb \
+            ffmpeg \
+            python3 \
+            fonts-noto-core \
+            fonts-noto-color-emoji
+
+          fc-cache -f -v
+
+      # ============================================
+      # START VIRTUAL DISPLAY
+      # ============================================
       - name: Start virtual display
         run: |
-          Xvfb :99 -screen 0 1920x1080x24 -ac &
+          Xvfb :99 \
+            -screen 0 1920x1080x24 \
+            -ac \
+            +extension GLX \
+            +render \
+            -noreset \
+            > xvfb.log 2>&1 &
+
           sleep 3
+
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
 
+      # ============================================
+      # SERVE HTML
+      # ============================================
       - name: Serve the scene locally
         run: |
           cd "$GITHUB_WORKSPACE"
-          nohup python3 -m http.server 8080 > server.log 2>&1 &
-          sleep 2
 
+          nohup python3 -m http.server 8080 \
+            > server.log 2>&1 &
+
+          sleep 3
+
+          echo "HTML server started"
+
+          curl -I http://localhost:8080/index.html
+
+      # ============================================
+      # LAUNCH CHROME
+      # ============================================
       - name: Launch Chrome fullscreen with the animation
         run: |
           rm -rf /tmp/chrome-profile
@@ -50,6 +91,7 @@ jobs:
             --kiosk \
             --window-size=1920,1080 \
             --window-position=0,0 \
+            --start-maximized \
             --no-first-run \
             --no-default-browser-check \
             --no-sandbox \
@@ -58,38 +100,82 @@ jobs:
             --disable-popup-blocking \
             --disable-notifications \
             --autoplay-policy=no-user-gesture-required \
-            --disable-gpu \
+            --use-gl=angle \
+            --use-angle=swiftshader \
+            --disable-background-timer-throttling \
+            --disable-backgrounding-occluded-windows \
+            --disable-renderer-backgrounding \
+            --disable-features=CalculateNativeWinOcclusion \
+            --force-device-scale-factor=1 \
             --user-data-dir=/tmp/chrome-profile \
             "http://localhost:8080/index.html" \
             > chromium.log 2>&1 &
 
           sleep 8
 
-      - name: Stream to YouTube via ffmpeg
+          echo "Chrome started"
+
+      # ============================================
+      # VERIFY CHROME / PAGE
+      # ============================================
+      - name: Verify browser and display
+        run: |
+          echo "DISPLAY=$DISPLAY"
+
+          echo "Checking X display..."
+          xdpyinfo -display :99 | head -20 || true
+
+          echo "Checking Chrome process..."
+          pgrep -af chrome || true
+
+          echo "Checking page..."
+          curl -s http://localhost:8080/index.html | head -20 || true
+
+      # ============================================
+      # STREAM TO YOUTUBE
+      # ============================================
+      - name: Stream to YouTube via FFmpeg
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
           if [ -z "$YOUTUBE_STREAM_KEY" ]; then
-            echo "ERROR: YOUTUBE_STREAM_KEY secret is not set. See README.md." >&2
+            echo "ERROR: YOUTUBE_STREAM_KEY secret is not set."
             exit 1
           fi
 
+          echo "Starting YouTube stream..."
+
           ffmpeg \
+            -hide_banner \
+            -loglevel info \
+            -thread_queue_size 1024 \
             -f x11grab \
+            -draw_mouse 0 \
             -video_size 1920x1080 \
             -framerate 30 \
             -i :99 \
             -f lavfi \
+            -thread_queue_size 512 \
             -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+            -map 0:v:0 \
+            -map 1:a:0 \
             -c:v libx264 \
             -preset veryfast \
             -tune zerolatency \
-            -b:v 3000k \
-            -maxrate 3000k \
-            -bufsize 6000k \
+            -profile:v high \
+            -level 4.2 \
             -pix_fmt yuv420p \
+            -r 30 \
+            -b:v 5000k \
+            -minrate 5000k \
+            -maxrate 5000k \
+            -bufsize 10000k \
             -g 60 \
+            -keyint_min 60 \
+            -sc_threshold 0 \
             -c:a aac \
             -b:a 128k \
+            -ar 44100 \
+            -ac 2 \
             -f flv \
             "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
