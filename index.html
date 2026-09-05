@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Diwali Live — India Shines | Smooth 1080p</title>
+<title>Diwali Live — India Shines</title>
 <style>
   html, body {
     margin: 0; padding: 0; overflow: hidden;
     width: 1920px; height: 1080px;
     background: #060314;
-    font-family: 'Noto Serif', 'Noto Serif Devanagari', Georgia, serif;
-    text-rendering: optimizeLegibility;
+    font-family: 'Georgia', 'Palatino Linotype', serif;
   }
   #scene { position: absolute; top:0; left:0; }
   .title {
@@ -41,10 +40,8 @@
     top: 136px; left: 0; width: 1920px;
     text-align: center;
     color: #ffd27a;
-    font-family: 'Noto Serif Devanagari', 'Noto Serif', serif;
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: 1px;
+    font-size: 22px;
+    letter-spacing: 2px;
     text-shadow: 0 0 12px rgba(255,183,77,0.75);
     opacity: 0.9;
     pointer-events: none;
@@ -136,24 +133,8 @@
 
 <script>
 const canvas = document.getElementById('scene');
-const ctx = canvas.getContext('2d', {
-  alpha: false,
-  desynchronized: true
-});
+const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
-
-// Static gradients are created once instead of every animation frame.
-const skyGradient = ctx.createLinearGradient(0, 0, 0, H);
-skyGradient.addColorStop(0, '#050314');
-skyGradient.addColorStop(0.55, '#0d0730');
-skyGradient.addColorStop(1, '#1c0f3a');
-
-const vignetteGradient = ctx.createRadialGradient(
-  W/2, H/2, H*0.35,
-  W/2, H/2, H*0.85
-);
-vignetteGradient.addColorStop(0, 'rgba(0,0,0,0)');
-vignetteGradient.addColorStop(1, 'rgba(0,0,0,0.45)');
 
 // ================= Clock (IST) =================
 function updateClock(){
@@ -200,7 +181,7 @@ function hexToRgba(hex, a){
 
 // ================= Stars =================
 const stars = [];
-for (let i=0;i<150;i++){
+for (let i=0;i<220;i++){
   stars.push({
     x: Math.random()*W,
     y: Math.random()*H*0.7,
@@ -225,14 +206,6 @@ const mainlandPts = INDIA_MAINLAND.map(toCanvas);
 const andamanPts = INDIA_ANDAMAN.map(toCanvas);
 const sriLankaPts = SRI_LANKA.map(toCanvas);
 
-const mainlandMinY = Math.min(...mainlandPts.map(p => p[1]));
-const mainlandMaxY = Math.max(...mainlandPts.map(p => p[1]));
-const mainlandGradient = ctx.createLinearGradient(0, mainlandMinY, 0, mainlandMaxY);
-mainlandGradient.addColorStop(0, '#ffe9a0');
-mainlandGradient.addColorStop(0.4, '#ffb347');
-mainlandGradient.addColorStop(0.75, '#ff8c1a');
-mainlandGradient.addColorStop(1, '#e8590c');
-
 function polyPath(pts){
   ctx.beginPath();
   pts.forEach(([x,y],i)=> i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));
@@ -245,7 +218,14 @@ function drawIndia(t){
   // --- mainland ---
   ctx.save();
   polyPath(mainlandPts);
-  ctx.fillStyle = mainlandGradient;
+  const minY = Math.min(...mainlandPts.map(p=>p[1]));
+  const maxY = Math.max(...mainlandPts.map(p=>p[1]));
+  const grad = ctx.createLinearGradient(0, minY, 0, maxY);
+  grad.addColorStop(0, '#ffe9a0');
+  grad.addColorStop(0.4, '#ffb347');
+  grad.addColorStop(0.75, '#ff8c1a');
+  grad.addColorStop(1, '#e8590c');
+  ctx.fillStyle = grad;
   ctx.shadowColor = 'rgba(255,170,60,0.95)';
   ctx.shadowBlur = glow;
   ctx.globalAlpha = 0.96;
@@ -318,7 +298,7 @@ function perimeterPoints(pts, count){
   }
   return out;
 }
-const diyaSpots = perimeterPoints(mainlandPts, 85);
+const diyaSpots = perimeterPoints(mainlandPts, 110);
 const bulbColors = ['#fff3c4','#ffb347','#ff7b1a','#ffd700','#ff5e3a'];
 
 function drawDiya(x,y,t,seed){
@@ -351,7 +331,7 @@ function drawTwinkle(x,y,t,seed){
   ctx.globalAlpha = a;
   ctx.fillStyle = '#fff3c4';
   ctx.shadowColor = '#ffd27a';
-  ctx.shadowBlur = 5;
+  ctx.shadowBlur = 8;
   ctx.beginPath();
   ctx.arc(x,y,2.2,0,Math.PI*2);
   ctx.fill();
@@ -377,7 +357,7 @@ function drawMoon(t){
   body.addColorStop(1,'#f2e6b8');
   ctx.fillStyle = body;
   ctx.shadowColor = 'rgba(255,250,220,0.7)';
-  ctx.shadowBlur = 16;
+  ctx.shadowBlur = 24;
   ctx.fill();
 
   ctx.globalAlpha = 0.18;
@@ -424,7 +404,7 @@ function drawGarland(t){
     ctx.arc(x, yTop+30, 2.6, 0, Math.PI*2);
     ctx.fillStyle = '#fff3c4';
     ctx.shadowColor = '#ffd27a';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 10;
     ctx.fill();
   }
   ctx.restore();
@@ -432,7 +412,7 @@ function drawGarland(t){
 
 // ================= Falling marigold petals =================
 const petals = [];
-for (let i=0;i<28;i++){
+for (let i=0;i<40;i++){
   petals.push({
     x: Math.random()*W, y: Math.random()*H,
     speed: 0.4+Math.random()*0.9,
@@ -447,9 +427,9 @@ for (let i=0;i<28;i++){
 function updateAndDrawPetals(t){
   ctx.save();
   petals.forEach(p=>{
-    p.y += p.speed * dt;
-    p.x += Math.sin(t/1000*p.driftSpeed + p.drift)*0.6*dt;
-    p.rot += p.rotSpeed * dt;
+    p.y += p.speed;
+    p.x += Math.sin(t/1000*p.driftSpeed + p.drift)*0.6;
+    p.rot += p.rotSpeed;
     if (p.y > H+10){ p.y = -10; p.x = Math.random()*W; }
     ctx.save();
     ctx.translate(p.x,p.y);
@@ -466,7 +446,7 @@ function updateAndDrawPetals(t){
 
 // ================= Floating sky lanterns =================
 const lanterns = [];
-for (let i=0;i<7;i++){
+for (let i=0;i<9;i++){
   lanterns.push({
     x: 100 + Math.random()*1720,
     y: 1080 + Math.random()*600,
@@ -478,7 +458,7 @@ for (let i=0;i<7;i++){
 }
 function updateAndDrawLanterns(t){
   lanterns.forEach(l=>{
-    l.y -= l.speed * dt;
+    l.y -= l.speed;
     if (l.y < -60){ l.y = 1080+Math.random()*200; l.x = 100+Math.random()*1720; }
     const sx = l.x + Math.sin(t/1000*l.swaySpeed + l.sway)*18;
     ctx.save();
@@ -542,7 +522,7 @@ function drawRangoli(t){
   ctx.arc(0,0,20,0,Math.PI*2);
   ctx.fillStyle = '#ffd23f';
   ctx.shadowColor = 'rgba(255,210,100,0.9)';
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 20;
   ctx.globalAlpha = 0.95;
   ctx.fill();
   ctx.restore();
@@ -551,7 +531,6 @@ function drawRangoli(t){
 // ================= Fireworks (aerial — several distinct cracker types) =================
 let fireworks = [];
 let particles = [];
-let dt = 1;
 const colorSets = [
   ['#ffd23f','#ff8c42','#ff3c38'],
   ['#8ecae6','#219ebc','#ffffff'],
@@ -573,11 +552,11 @@ function spawnFirework(){
     colors: colorSets[Math.floor(Math.random()*colorSets.length)]
   });
 }
-setInterval(spawnFirework, 1150);
+setInterval(spawnFirework, 850);
 
 function explode(x,y,colors,type){
   if (type === 'peony'){
-    const count = 65;
+    const count = 90;
     for (let i=0;i<count;i++){
       const ang = (Math.PI*2/count)*i + Math.random()*0.12;
       const speed = 2.5+Math.random()*5.5;
@@ -586,7 +565,7 @@ function explode(x,y,colors,type){
         color: colors[Math.floor(Math.random()*colors.length)], type:'dot' });
     }
   } else if (type === 'chrysanthemum'){
-    const count = 55;
+    const count = 70;
     for (let i=0;i<count;i++){
       const ang = (Math.PI*2/count)*i;
       const speed = 4+Math.random()*4.5;
@@ -595,7 +574,7 @@ function explode(x,y,colors,type){
         color: colors[Math.floor(Math.random()*colors.length)], type:'streak' });
     }
   } else if (type === 'willow'){
-    const count = 48;
+    const count = 60;
     for (let i=0;i<count;i++){
       const ang = (Math.PI*2/count)*i + Math.random()*0.2;
       const speed = 2+Math.random()*3.2;
@@ -604,7 +583,7 @@ function explode(x,y,colors,type){
         color:'#ffd27a', type:'streak' });
     }
   } else if (type === 'ring'){
-    const count = 48;
+    const count = 60;
     for (let i=0;i<count;i++){
       const ang = (Math.PI*2/count)*i;
       const speed = 4.2+Math.random()*0.4;
@@ -613,7 +592,7 @@ function explode(x,y,colors,type){
         color: colors[Math.floor(Math.random()*colors.length)], type:'dot' });
     }
   } else if (type === 'crackle'){
-    const count = 65;
+    const count = 100;
     for (let i=0;i<count;i++){
       const ang = Math.random()*Math.PI*2;
       const speed = 1.5+Math.random()*5.5;
@@ -626,7 +605,7 @@ function explode(x,y,colors,type){
     for (let a=0; a<arms; a++){
       const ang = (Math.PI*2/arms)*a + Math.random()*0.1;
       const speed = 6+Math.random()*1.5;
-      for (let j=0;j<7;j++){
+      for (let j=0;j<9;j++){
         particles.push({ x,y, vx:Math.cos(ang)*speed*(0.4+j*0.07), vy:Math.sin(ang)*speed*(0.4+j*0.07),
           life:1, decay:0.006+Math.random()*0.004, size:2.2, gravity:0.03, trail:[],
           color: colors[a%colors.length], type:'streak' });
@@ -634,18 +613,13 @@ function explode(x,y,colors,type){
     }
   }
   particles.push({x,y,vx:0,vy:0,life:1,decay:0.12,size:38,color:'#ffffff',type:'flash'});
-
-  // Safety cap for long-running 24/7 streams.
-  if (particles.length > 900) {
-    particles.splice(0, particles.length - 900);
-  }
 }
 
 function updateFireworks(){
   fireworks = fireworks.filter(f=>{
     f.trail.push({x:f.x,y:f.y});
-    if (f.trail.length>4) f.trail.shift();
-    f.y += f.vy * dt;
+    if (f.trail.length>6) f.trail.shift();
+    f.y += f.vy;
     if (f.y <= f.targetY){
       explode(f.x, f.y, f.colors, f.type);
       return false;
@@ -655,11 +629,11 @@ function updateFireworks(){
   particles = particles.filter(p=>{
     if (p.trail){
       p.trail.push({x:p.x,y:p.y});
-      if (p.trail.length>3) p.trail.shift();
+      if (p.trail.length>5) p.trail.shift();
     }
-    p.x += p.vx * dt; p.y += p.vy * dt;
-    p.vy += (p.gravity!==undefined ? p.gravity : 0.045) * dt;
-    p.vx *= Math.pow(0.99, dt);
+    p.x += p.vx; p.y += p.vy;
+    p.vy += (p.gravity!==undefined ? p.gravity : 0.045);
+    p.vx *= 0.99;
     p.life -= p.decay;
     return p.life > 0;
   });
@@ -682,7 +656,7 @@ function drawFireworks(){
     ctx.arc(f.x,f.y,3,0,Math.PI*2);
     ctx.fillStyle = '#fff8e0';
     ctx.shadowColor = '#ffdd8a';
-    ctx.shadowBlur = 5;
+    ctx.shadowBlur = 14;
     ctx.fill();
     ctx.shadowBlur = 0;
   });
@@ -728,7 +702,7 @@ function drawFireworks(){
 // ================= Ground fountain (anaar) =================
 const anaar = { x: 210, y: 1040, sparks: [] };
 function updateAndDrawAnaar(t){
-  for (let i=0;i<2;i++){
+  for (let i=0;i<3;i++){
     const ang = -Math.PI/2 + (Math.random()-0.5)*0.9;
     const speed = 4+Math.random()*5;
     anaar.sparks.push({
@@ -739,9 +713,7 @@ function updateAndDrawAnaar(t){
     });
   }
   anaar.sparks = anaar.sparks.filter(s=>{
-    s.x += s.vx * dt; s.y += s.vy * dt;
-    s.vy += 0.16 * dt;
-    s.vx *= Math.pow(0.99, dt);
+    s.x += s.vx; s.y += s.vy; s.vy += 0.16; s.vx *= 0.99;
     s.life -= s.decay;
     return s.life>0 && s.y < 1080;
   });
@@ -772,7 +744,7 @@ function updateAndDrawAnaar(t){
 // ================= Ground spinner (chakri) =================
 const chakri = { x: 1710, y: 1040, angle:0 };
 function updateAndDrawChakri(t){
-  chakri.angle += 0.28 * dt;
+  chakri.angle += 0.28;
   ctx.save();
   ctx.translate(chakri.x, chakri.y);
   ctx.fillStyle = '#5c2f14';
@@ -805,15 +777,14 @@ function updateAndDrawChakri(t){
 }
 
 // ================= Main loop =================
-let lastFrameTime = performance.now();
-
 function frame(t){
-  dt = Math.min((t - lastFrameTime) / 16.6667, 2.0);
-  lastFrameTime = t;
-
   ctx.clearRect(0,0,W,H);
 
-  ctx.fillStyle = skyGradient;
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#050314');
+  sky.addColorStop(0.55,'#0d0730');
+  sky.addColorStop(1,'#1c0f3a');
+  ctx.fillStyle = sky;
   ctx.fillRect(0,0,W,H);
 
   stars.forEach(s=>{
@@ -844,7 +815,10 @@ function frame(t){
 
   drawGarland(t);
 
-  ctx.fillStyle = vignetteGradient;
+  const vg = ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,H*0.85);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vg;
   ctx.fillRect(0,0,W,H);
 
   requestAnimationFrame(frame);
