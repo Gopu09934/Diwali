@@ -260,7 +260,7 @@ const Sound = (() => {
   function launch(x){
     if (!ac || muted || ac.state !== 'running') return;
     const t = ac.currentTime, o = dest(x);
-    noise(o, t, 0.8, 'bandpass', 500, 2800, 0.07, 0.15);
+    noise(o, t, 0.7, 'lowpass', 400, 1400, 0.025, 0.25);
   }
 
   // one distinct sound per cracker type
@@ -298,31 +298,29 @@ const Sound = (() => {
     }
   }
 
-  // ground crackers: anaar fizz (left) + chakri whirr (right), continuous
+  // gentle ambient: a soft, quiet bell every few seconds (no continuous noise)
   function startGround(){
     if (groundStarted) return; groundStarted = true;
-    const t = ac.currentTime;
-    const a = ac.createBufferSource(); a.buffer = noiseBuf; a.loop = true;
-    const af = ac.createBiquadFilter(); af.type = 'bandpass'; af.frequency.value = 2600; af.Q.value = 0.8;
-    const ag = ac.createGain(); ag.gain.value = 0.05;
-    const ap = ac.createStereoPanner ? ac.createStereoPanner() : null;
-    a.connect(af); af.connect(ag);
-    if (ap){ ap.pan.value = -0.85; ag.connect(ap); ap.connect(master); } else ag.connect(master);
-    a.start(t);
-    const lfo = ac.createOscillator(); lfo.frequency.value = 6;
-    const lg = ac.createGain(); lg.gain.value = 0.02;
-    lfo.connect(lg); lg.connect(ag.gain); lfo.start(t);
-
-    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 170;
-    const of = ac.createBiquadFilter(); of.type = 'bandpass'; of.frequency.value = 900; of.Q.value = 1.5;
-    const og = ac.createGain(); og.gain.value = 0.03;
-    const op = ac.createStereoPanner ? ac.createStereoPanner() : null;
-    o.connect(of); of.connect(og);
-    if (op){ op.pan.value = 0.85; og.connect(op); op.connect(master); } else og.connect(master);
-    o.start(t);
-    const tl = ac.createOscillator(); tl.frequency.value = 11;
-    const tg = ac.createGain(); tg.gain.value = 0.025;
-    tl.connect(tg); tg.connect(og.gain); tl.start(t);
+    const scale = [392.0, 440.0, 523.25, 587.33, 659.25, 783.99]; // calm pentatonic
+    function chime(){
+      if (ac && ac.state === 'running' && !muted){
+        const t = ac.currentTime;
+        const f = scale[Math.floor(Math.random()*scale.length)];
+        const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        const o2 = ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = f*2;
+        const g = ac.createGain(), g2 = ac.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.035, t + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 3.5);
+        g2.gain.setValueAtTime(0.0001, t);
+        g2.gain.exponentialRampToValueAtTime(0.008, t + 0.04);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t + 2.0);
+        o.connect(g); o2.connect(g2); g.connect(master); g2.connect(master);
+        o.start(t); o.stop(t + 3.6); o2.start(t); o2.stop(t + 2.1);
+      }
+      setTimeout(chime, 6000 + Math.random()*6000);
+    }
+    setTimeout(chime, 2500);
   }
 
   function toggle(){
