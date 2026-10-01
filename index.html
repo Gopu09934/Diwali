@@ -107,6 +107,12 @@
     font-weight: 700;
     text-shadow: 0 0 18px rgba(255,183,77,0.9), 0 0 36px rgba(255,140,0,0.6);
   }
+  .soundhint {
+    position: absolute; bottom: 46px; left: 70px;
+    color: #ffdfa0; font-size: 22px; letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255,183,77,0.7);
+    opacity: 0.85; pointer-events: none; display: none;
+  }
   .ribbon {
     position: absolute; top:0; left:0; width:1920px; height:10px;
     background: linear-gradient(90deg, #FF9933 0 33%, #FFFFFF 33% 66%, #138808 66% 100%);
@@ -130,6 +136,7 @@
     </div>
   </div>
   <div class="clockbox" id="clock"></div>
+  <div class="soundhint" id="soundhint">🔊 Click anywhere for cracker sounds</div>
 
 <script>
 const canvas = document.getElementById('scene');
@@ -178,6 +185,160 @@ function hexToRgba(hex, a){
   const r=(v>>16)&255, g=(v>>8)&255, b=v&255;
   return `rgba(${r},${g},${b},${a})`;
 }
+
+// ================= Cracker sounds (Web Audio, synthesized) =================
+const Sound = (() => {
+  let ac = null, master = null, noiseBuf = null, muted = false;
+  let groundStarted = false;
+
+  function init(){
+    if (ac){ if (ac.state === 'suspended') ac.resume().then(hint); return; }
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = 0.7;
+    const comp = ac.createDynamicsCompressor();
+    master.connect(comp); comp.connect(ac.destination);
+    const len = ac.sampleRate * 2;
+    noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random()*2 - 1;
+    startGround();
+    ac.onstatechange = hint;
+    setTimeout(hint, 400);
+  }
+
+  // show "click for sound" only if the browser is blocking audio
+  function hint(){
+    const h = document.getElementById('soundhint');
+    if (h) h.style.display = (ac && ac.state === 'running') ? 'none' : 'block';
+  }
+
+  function dest(x){
+    if (!ac.createStereoPanner) return master;
+    const p = ac.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, (x/W)*2 - 1));
+    p.connect(master);
+    return p;
+  }
+
+  function noise(out, t, dur, type, f0, f1, vol, attack = 0.003){
+    const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+    const f = ac.createBiquadFilter(); f.type = type;
+    f.frequency.setValueAtTime(f0, t);
+    f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(out);
+    s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  }
+
+  function tone(out, t, dur, f0, f1, vol, type = 'sine'){
+    const o = ac.createOscillator(); o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(out);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  function boom(out, t, vol, dur = 0.7){
+    tone(out, t, dur, 130, 32, vol, 'sine');
+    noise(out, t, dur, 'lowpass', 1200, 70, vol*1.2);
+  }
+
+  function crackles(out, t, n, span, vol){
+    for (let i = 0; i < n; i++){
+      noise(out, t + Math.random()*span, 0.025, 'highpass',
+            3500 + Math.random()*3000, 3000, vol*(0.4 + Math.random()*0.6), 0.001);
+    }
+  }
+
+  // rocket going up
+  function launch(x){
+    if (!ac || muted || ac.state !== 'running') return;
+    const t = ac.currentTime, o = dest(x);
+    noise(o, t, 0.8, 'bandpass', 500, 2800, 0.07, 0.15);
+  }
+
+  // one distinct sound per cracker type
+  function burst(type, x){
+    if (!ac || muted || ac.state !== 'running') return;
+    const t = ac.currentTime, o = dest(x);
+    switch (type){
+      case 'peony':          // round, full boom
+        boom(o, t, 0.5, 0.8);
+        crackles(o, t + 0.05, 10, 0.5, 0.12);
+        break;
+      case 'chrysanthemum':  // sharp bang + sizzle
+        noise(o, t, 0.25, 'highpass', 3000, 800, 0.5, 0.001);
+        boom(o, t, 0.3, 0.5);
+        noise(o, t + 0.1, 1.2, 'highpass', 6000, 3500, 0.08, 0.1);
+        break;
+      case 'willow':         // soft thump + long shimmering fall
+        boom(o, t, 0.3, 0.9);
+        noise(o, t + 0.05, 2.4, 'bandpass', 3500, 700, 0.12, 0.25);
+        break;
+      case 'ring':           // whistle-pop with a bell ring
+        tone(o, t, 0.35, 900, 2200, 0.07, 'sine');
+        noise(o, t, 0.12, 'bandpass', 1800, 900, 0.4, 0.001);
+        tone(o, t, 0.9, 1320, 1320, 0.1, 'triangle');
+        break;
+      case 'crackle':        // small pop then rapid crackling
+        boom(o, t, 0.25, 0.4);
+        crackles(o, t + 0.1, 30, 1.4, 0.3);
+        break;
+      case 'palm':           // big deep boom + falling whistle
+        boom(o, t, 0.65, 1.1);
+        tone(o, t + 0.05, 1.3, 1800, 250, 0.04, 'sawtooth');
+        noise(o, t + 0.1, 1.0, 'bandpass', 2500, 500, 0.1, 0.1);
+        break;
+    }
+  }
+
+  // ground crackers: anaar fizz (left) + chakri whirr (right), continuous
+  function startGround(){
+    if (groundStarted) return; groundStarted = true;
+    const t = ac.currentTime;
+    const a = ac.createBufferSource(); a.buffer = noiseBuf; a.loop = true;
+    const af = ac.createBiquadFilter(); af.type = 'bandpass'; af.frequency.value = 2600; af.Q.value = 0.8;
+    const ag = ac.createGain(); ag.gain.value = 0.05;
+    const ap = ac.createStereoPanner ? ac.createStereoPanner() : null;
+    a.connect(af); af.connect(ag);
+    if (ap){ ap.pan.value = -0.85; ag.connect(ap); ap.connect(master); } else ag.connect(master);
+    a.start(t);
+    const lfo = ac.createOscillator(); lfo.frequency.value = 6;
+    const lg = ac.createGain(); lg.gain.value = 0.02;
+    lfo.connect(lg); lg.connect(ag.gain); lfo.start(t);
+
+    const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 170;
+    const of = ac.createBiquadFilter(); of.type = 'bandpass'; of.frequency.value = 900; of.Q.value = 1.5;
+    const og = ac.createGain(); og.gain.value = 0.03;
+    const op = ac.createStereoPanner ? ac.createStereoPanner() : null;
+    o.connect(of); of.connect(og);
+    if (op){ op.pan.value = 0.85; og.connect(op); op.connect(master); } else og.connect(master);
+    o.start(t);
+    const tl = ac.createOscillator(); tl.frequency.value = 11;
+    const tg = ac.createGain(); tg.gain.value = 0.025;
+    tl.connect(tg); tg.connect(og.gain); tl.start(t);
+  }
+
+  function toggle(){
+    muted = !muted;
+    if (master) master.gain.value = muted ? 0 : 0.7;
+  }
+
+  return { init, launch, burst, toggle };
+})();
+
+// Start immediately (works with Chrome's --autoplay-policy flag, e.g. on the
+// live stream); in a normal browser the first click/key/touch unlocks audio.
+try { Sound.init(); } catch(e){}
+['click','keydown','touchstart'].forEach(ev =>
+  window.addEventListener(ev, () => Sound.init()));
+window.addEventListener('keydown', e => { if (e.key === 'm' || e.key === 'M') Sound.toggle(); });
 
 // ================= Stars =================
 const stars = [];
@@ -551,10 +712,12 @@ function spawnFirework(){
     type,
     colors: colorSets[Math.floor(Math.random()*colorSets.length)]
   });
+  Sound.launch(x);
 }
 setInterval(spawnFirework, 850);
 
 function explode(x,y,colors,type){
+  Sound.burst(type, x);
   if (type === 'peony'){
     const count = 90;
     for (let i=0;i<count;i++){
