@@ -30,6 +30,8 @@ jobs:
           sudo apt-get install -y \
             xvfb \
             ffmpeg \
+            pulseaudio \
+            pulseaudio-utils \
             python3 \
             fonts-noto-core \
             fonts-noto-color-emoji
@@ -43,6 +45,15 @@ jobs:
           Xvfb :99 -screen 0 1920x1080x24 -ac &
           sleep 3
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
+
+      - name: Start virtual audio device (captures cracker sounds)
+        run: |
+          pulseaudio --start --exit-idle-time=-1 --disable-shm=yes
+          sleep 2
+          pactl load-module module-null-sink sink_name=vsink sink_properties=device.description=VirtualSink
+          pactl set-default-sink vsink
+          pactl set-sink-volume vsink 100%
+          pactl list short sinks
 
       - name: Serve the scene locally
         run: |
@@ -88,8 +99,11 @@ jobs:
             -video_size 1920x1080 \
             -framerate 30 \
             -i :99 \
-            -f lavfi \
-            -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+            -f pulse \
+            -thread_queue_size 1024 \
+            -ac 2 \
+            -ar 44100 \
+            -i vsink.monitor \
             -c:v libx264 \
             -preset veryfast \
             -tune zerolatency \
